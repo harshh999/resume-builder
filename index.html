@@ -1,19 +1,939 @@
-<!doctype html>
-<html>
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<title>My static Space</title>
-		<link rel="stylesheet" href="style.css" />
-	</head>
-	<body>
-		<div class="card">
-			<h1>Welcome to your static Space!</h1>
-			<p>You can modify this app directly by editing <i>index.html</i> in the Files and versions tab.</p>
-			<p>
-				Also don't forget to check the
-				<a href="https://huggingface.co/docs/hub/spaces" target="_blank">Spaces documentation</a>.
-			</p>
-		</div>
-	</body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+        }
+        
+        .resume-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-title {
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        .resume-preview {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        @media (max-width: 768px) {
+            .builder-container {
+                flex-direction: column;
+            }
+            
+            .input-section, .preview-section {
+                width: 100% !important;
+            }
+            
+            .preview-section {
+                margin-top: 2rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Resume Builder</h1>
+            <p class="text-gray-600 mt-2">Create a professional, ATS-friendly resume in minutes</p>
+        </header>
+        
+        <div class="builder-container flex flex-wrap justify-between">
+            <!-- Input Section -->
+            <div class="input-section w-full md:w-1/2 lg:w-5/12 bg-white p-6 rounded-lg shadow">
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Personal Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="input-group">
+                            <label class="block text-gray-700 text-sm font-medium mb-1">First Name</label>
+                            <input type="text" id="firstName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="input-group">
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Last Name</label>
+                            <input type="text" id="lastName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="input-group">
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Email</label>
+                            <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="input-group">
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Phone</label>
+                            <input type="tel" id="phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Address</label>
+                        <input type="text" id="address" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">LinkedIn</label>
+                        <input type="url" id="linkedin" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Portfolio/GitHub</label>
+                        <input type="url" id="portfolio" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <!-- Professional Summary -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Professional Summary</h2>
+                    <div class="input-group">
+                        <textarea id="summary" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Work Experience -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Work Experience</h2>
+                        <button id="addExperience" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm">
+                            <i class="fas fa-plus mr-1"></i> Add
+                        </button>
+                    </div>
+                    <div id="experienceContainer">
+                        <!-- Experience items will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Education -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Education</h2>
+                        <button id="addEducation" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm">
+                            <i class="fas fa-plus mr-1"></i> Add
+                        </button>
+                    </div>
+                    <div id="educationContainer">
+                        <!-- Education items will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Skills -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Skills</h2>
+                        <button id="addSkill" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm">
+                            <i class="fas fa-plus mr-1"></i> Add
+                        </button>
+                    </div>
+                    <div id="skillsContainer">
+                        <!-- Skill items will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Projects -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Projects</h2>
+                        <button id="addProject" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm">
+                            <i class="fas fa-plus mr-1"></i> Add
+                        </button>
+                    </div>
+                    <div id="projectsContainer">
+                        <!-- Project items will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Certifications -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Certifications</h2>
+                        <button id="addCertification" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm">
+                            <i class="fas fa-plus mr-1"></i> Add
+                        </button>
+                    </div>
+                    <div id="certificationsContainer">
+                        <!-- Certification items will be added here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preview Section -->
+            <div class="preview-section w-full md:w-1/2 lg:w-6/12 bg-white p-8 resume-preview rounded-lg">
+                <div id="resumePreview" class="p-6">
+                    <!-- Header -->
+                    <div class="text-center mb-6">
+                        <h1 id="previewName" class="text-2xl font-bold mb-1">Your Name</h1>
+                        <div class="flex flex-wrap justify-center gap-4 text-sm text-gray-600">
+                            <span id="previewEmail">email@example.com</span>
+                            <span id="previewPhone">(123) 456-7890</span>
+                            <span id="previewAddress">City, State</span>
+                        </div>
+                        <div class="flex flex-wrap justify-center gap-4 text-sm text-blue-600 mt-1">
+                            <span id="previewLinkedIn">linkedin.com/in/yourprofile</span>
+                            <span id="previewPortfolio">yourportfolio.com</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Professional Summary -->
+                    <div class="resume-section">
+                        <h2 class="section-title font-bold text-lg">PROFESSIONAL SUMMARY</h2>
+                        <p id="previewSummary" class="text-gray-700">Experienced professional with a proven track record in [your field]. Skilled in [key skills]. Passionate about [relevant interests]. Strong background in [relevant experience].</p>
+                    </div>
+                    
+                    <!-- Work Experience -->
+                    <div class="resume-section">
+                        <h2 class="section-title font-bold text-lg">WORK EXPERIENCE</h2>
+                        <div id="previewExperienceContainer">
+                            <div class="mb-4">
+                                <div class="flex justify-between">
+                                    <h3 class="font-semibold">Job Title</h3>
+                                    <span class="text-gray-600">Start Date - End Date</span>
+                                </div>
+                                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Company Name</span>
+                                    <span>Location</span>
+                                </div>
+                                <ul class="list-disc pl-5 text-gray-700">
+                                    <li>Responsibility or achievement description</li>
+                                    <li>Another responsibility or achievement</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Education -->
+                    <div class="resume-section">
+                        <h2 class="section-title font-bold text-lg">EDUCATION</h2>
+                        <div id="previewEducationContainer">
+                            <div class="mb-2">
+                                <div class="flex justify-between">
+                                    <h3 class="font-semibold">Degree Name</h3>
+                                    <span class="text-gray-600">Graduation Year</span>
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <span>University Name</span>
+                                    <span class="mx-2">•</span>
+                                    <span>Location</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Skills -->
+                    <div class="resume-section">
+                        <h2 class="section-title font-bold text-lg">SKILLS</h2>
+                        <div id="previewSkillsContainer" class="flex flex-wrap gap-2">
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">Skill 1</span>
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">Skill 2</span>
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">Skill 3</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Projects -->
+                    <div class="resume-section">
+                        <h2 class="section-title font-bold text-lg">PROJECTS</h2>
+                        <div id="previewProjectsContainer">
+                            <div class="mb-4">
+                                <div class="flex justify-between">
+                                    <h3 class="font-semibold">Project Name</h3>
+                                    <span class="text-gray-600">Date</span>
+                                </div>
+                                <div class="text-sm text-gray-600 mb-1">
+                                    <span>Technologies: Tech 1, Tech 2</span>
+                                </div>
+                                <ul class="list-disc pl-5 text-gray-700">
+                                    <li>Project description or achievement</li>
+                                    <li>Another project detail</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Certifications -->
+                    <div class="resume-section">
+                        <h2 class="section-title font-bold text-lg">CERTIFICATIONS</h2>
+                        <div id="previewCertificationsContainer">
+                            <div class="mb-2">
+                                <div class="flex justify-between">
+                                    <h3 class="font-semibold">Certification Name</h3>
+                                    <span class="text-gray-600">Date</span>
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <span>Issuing Organization</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button id="downloadBtn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-md font-medium">
+                        <i class="fas fa-download mr-2"></i> Download as PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize jsPDF
+        const { jsPDF } = window.jspdf;
+        
+        // DOM Elements
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone');
+        const addressInput = document.getElementById('address');
+        const linkedinInput = document.getElementById('linkedin');
+        const portfolioInput = document.getElementById('portfolio');
+        const summaryInput = document.getElementById('summary');
+        
+        // Preview Elements
+        const previewName = document.getElementById('previewName');
+        const previewEmail = document.getElementById('previewEmail');
+        const previewPhone = document.getElementById('previewPhone');
+        const previewAddress = document.getElementById('previewAddress');
+        const previewLinkedIn = document.getElementById('previewLinkedIn');
+        const previewPortfolio = document.getElementById('previewPortfolio');
+        const previewSummary = document.getElementById('previewSummary');
+        
+        // Containers
+        const experienceContainer = document.getElementById('experienceContainer');
+        const educationContainer = document.getElementById('educationContainer');
+        const skillsContainer = document.getElementById('skillsContainer');
+        const projectsContainer = document.getElementById('projectsContainer');
+        const certificationsContainer = document.getElementById('certificationsContainer');
+        
+        const previewExperienceContainer = document.getElementById('previewExperienceContainer');
+        const previewEducationContainer = document.getElementById('previewEducationContainer');
+        const previewSkillsContainer = document.getElementById('previewSkillsContainer');
+        const previewProjectsContainer = document.getElementById('previewProjectsContainer');
+        const previewCertificationsContainer = document.getElementById('previewCertificationsContainer');
+        
+        // Buttons
+        const addExperienceBtn = document.getElementById('addExperience');
+        const addEducationBtn = document.getElementById('addEducation');
+        const addSkillBtn = document.getElementById('addSkill');
+        const addProjectBtn = document.getElementById('addProject');
+        const addCertificationBtn = document.getElementById('addCertification');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        // Event Listeners for personal info
+        firstNameInput.addEventListener('input', updatePreview);
+        lastNameInput.addEventListener('input', updatePreview);
+        emailInput.addEventListener('input', updatePreview);
+        phoneInput.addEventListener('input', updatePreview);
+        addressInput.addEventListener('input', updatePreview);
+        linkedinInput.addEventListener('input', updatePreview);
+        portfolioInput.addEventListener('input', updatePreview);
+        summaryInput.addEventListener('input', updatePreview);
+        
+        // Add buttons event listeners
+        addExperienceBtn.addEventListener('click', addExperienceField);
+        addEducationBtn.addEventListener('click', addEducationField);
+        addSkillBtn.addEventListener('click', addSkillField);
+        addProjectBtn.addEventListener('click', addProjectField);
+        addCertificationBtn.addEventListener('click', addCertificationField);
+        
+        // Download button
+        downloadBtn.addEventListener('click', downloadPDF);
+        
+        // Update preview function
+        function updatePreview() {
+            const firstName = firstNameInput.value.trim();
+            const lastName = lastNameInput.value.trim();
+            
+            // Update name
+            if (firstName || lastName) {
+                previewName.textContent = `${firstName} ${lastName}`;
+            } else {
+                previewName.textContent = 'Your Name';
+            }
+            
+            // Update other fields
+            previewEmail.textContent = emailInput.value.trim() || 'email@example.com';
+            previewPhone.textContent = phoneInput.value.trim() || '(123) 456-7890';
+            previewAddress.textContent = addressInput.value.trim() || 'City, State';
+            
+            const linkedin = linkedinInput.value.trim();
+            previewLinkedIn.textContent = linkedin ? linkedin : 'linkedin.com/in/yourprofile';
+            previewLinkedIn.href = linkedin ? linkedin : '#';
+            
+            const portfolio = portfolioInput.value.trim();
+            previewPortfolio.textContent = portfolio ? portfolio : 'yourportfolio.com';
+            previewPortfolio.href = portfolio ? portfolio : '#';
+            
+            previewSummary.textContent = summaryInput.value.trim() || 'Experienced professional with a proven track record in [your field]. Skilled in [key skills]. Passionate about [relevant interests]. Strong background in [relevant experience].';
+        }
+        
+        // Experience Fields
+        function addExperienceField() {
+            const experienceId = Date.now();
+            
+            const experienceHTML = `
+                <div class="experience-item bg-gray-50 p-4 rounded-lg mb-4" data-id="${experienceId}">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-medium text-gray-700">Work Experience</h3>
+                        <button class="remove-experience text-red-500 hover:text-red-700" data-id="${experienceId}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Job Title</label>
+                            <input type="text" class="experience-title w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Company</label>
+                            <input type="text" class="experience-company w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Location</label>
+                            <input type="text" class="experience-location w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Dates</label>
+                            <input type="text" class="experience-dates w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Jan 2020 - Present">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Responsibilities (one per line)</label>
+                        <textarea class="experience-responsibilities w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Describe your responsibilities and achievements"></textarea>
+                    </div>
+                </div>
+            `;
+            
+            experienceContainer.insertAdjacentHTML('beforeend', experienceHTML);
+            
+            // Add event listeners to the new inputs
+            const newExperience = experienceContainer.querySelector(`[data-id="${experienceId}"]`);
+            const inputs = newExperience.querySelectorAll('input, textarea');
+            
+            inputs.forEach(input => {
+                input.addEventListener('input', updateExperiencePreview);
+            });
+            
+            // Add event listener to remove button
+            const removeBtn = newExperience.querySelector('.remove-experience');
+            removeBtn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                removeExperienceField(id);
+            });
+            
+            updateExperiencePreview();
+        }
+        
+        function removeExperienceField(id) {
+            const experienceItem = experienceContainer.querySelector(`[data-id="${id}"]`);
+            if (experienceItem) {
+                experienceItem.remove();
+                updateExperiencePreview();
+            }
+        }
+        
+        function updateExperiencePreview() {
+            const experienceItems = experienceContainer.querySelectorAll('.experience-item');
+            let previewHTML = '';
+            
+            experienceItems.forEach(item => {
+                const title = item.querySelector('.experience-title').value.trim() || 'Job Title';
+                const company = item.querySelector('.experience-company').value.trim() || 'Company Name';
+                const location = item.querySelector('.experience-location').value.trim() || 'Location';
+                const dates = item.querySelector('.experience-dates').value.trim() || 'Start Date - End Date';
+                const responsibilities = item.querySelector('.experience-responsibilities').value.trim();
+                
+                const responsibilitiesList = responsibilities.split('\n').filter(item => item.trim() !== '');
+                
+                previewHTML += `
+                    <div class="mb-4">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold">${title}</h3>
+                            <span class="text-gray-600">${dates}</span>
+                        </div>
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>${company}</span>
+                            <span>${location}</span>
+                        </div>
+                        <ul class="list-disc pl-5 text-gray-700">
+                            ${responsibilitiesList.map(resp => `<li>${resp}</li>`).join('')}
+                            ${responsibilitiesList.length === 0 ? '<li>Responsibility or achievement description</li>' : ''}
+                        </ul>
+                    </div>
+                `;
+            });
+            
+            if (experienceItems.length === 0) {
+                previewHTML = `
+                    <div class="mb-4">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold">Job Title</h3>
+                            <span class="text-gray-600">Start Date - End Date</span>
+                        </div>
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>Company Name</span>
+                            <span>Location</span>
+                        </div>
+                        <ul class="list-disc pl-5 text-gray-700">
+                            <li>Responsibility or achievement description</li>
+                            <li>Another responsibility or achievement</li>
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            previewExperienceContainer.innerHTML = previewHTML;
+        }
+        
+        // Education Fields
+        function addEducationField() {
+            const educationId = Date.now();
+            
+            const educationHTML = `
+                <div class="education-item bg-gray-50 p-4 rounded-lg mb-4" data-id="${educationId}">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-medium text-gray-700">Education</h3>
+                        <button class="remove-education text-red-500 hover:text-red-700" data-id="${educationId}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Degree</label>
+                            <input type="text" class="education-degree w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">University</label>
+                            <input type="text" class="education-university w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Location</label>
+                            <input type="text" class="education-location w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Graduation Year</label>
+                            <input type="text" class="education-year w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            educationContainer.insertAdjacentHTML('beforeend', educationHTML);
+            
+            // Add event listeners to the new inputs
+            const newEducation = educationContainer.querySelector(`[data-id="${educationId}"]`);
+            const inputs = newEducation.querySelectorAll('input');
+            
+            inputs.forEach(input => {
+                input.addEventListener('input', updateEducationPreview);
+            });
+            
+            // Add event listener to remove button
+            const removeBtn = newEducation.querySelector('.remove-education');
+            removeBtn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                removeEducationField(id);
+            });
+            
+            updateEducationPreview();
+        }
+        
+        function removeEducationField(id) {
+            const educationItem = educationContainer.querySelector(`[data-id="${id}"]`);
+            if (educationItem) {
+                educationItem.remove();
+                updateEducationPreview();
+            }
+        }
+        
+        function updateEducationPreview() {
+            const educationItems = educationContainer.querySelectorAll('.education-item');
+            let previewHTML = '';
+            
+            educationItems.forEach(item => {
+                const degree = item.querySelector('.education-degree').value.trim() || 'Degree Name';
+                const university = item.querySelector('.education-university').value.trim() || 'University Name';
+                const location = item.querySelector('.education-location').value.trim() || 'Location';
+                const year = item.querySelector('.education-year').value.trim() || 'Graduation Year';
+                
+                previewHTML += `
+                    <div class="mb-2">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold">${degree}</h3>
+                            <span class="text-gray-600">${year}</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <span>${university}</span>
+                            <span class="mx-2">•</span>
+                            <span>${location}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (educationItems.length === 0) {
+                previewHTML = `
+                    <div class="mb-2">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold">Degree Name</h3>
+                            <span class="text-gray-600">Graduation Year</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <span>University Name</span>
+                            <span class="mx-2">•</span>
+                            <span>Location</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            previewEducationContainer.innerHTML = previewHTML;
+        }
+        
+        // Skill Fields
+        function addSkillField() {
+            const skillId = Date.now();
+            
+            const skillHTML = `
+                <div class="skill-item bg-gray-50 p-4 rounded-lg mb-4" data-id="${skillId}">
+                    <div class="flex justify-between items-center">
+                        <div class="w-full">
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Skill</label>
+                            <div class="flex items-center gap-2">
+                                <input type="text" class="skill-name w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <button class="remove-skill text-red-500 hover:text-red-700" data-id="${skillId}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            skillsContainer.insertAdjacentHTML('beforeend', skillHTML);
+            
+            // Add event listener to the new input
+            const newSkill = skillsContainer.querySelector(`[data-id="${skillId}"]`);
+            const input = newSkill.querySelector('.skill-name');
+            
+            input.addEventListener('input', updateSkillsPreview);
+            
+            // Add event listener to remove button
+            const removeBtn = newSkill.querySelector('.remove-skill');
+            removeBtn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                removeSkillField(id);
+            });
+            
+            updateSkillsPreview();
+        }
+        
+        function removeSkillField(id) {
+            const skillItem = skillsContainer.querySelector(`[data-id="${id}"]`);
+            if (skillItem) {
+                skillItem.remove();
+                updateSkillsPreview();
+            }
+        }
+        
+        function updateSkillsPreview() {
+            const skillItems = skillsContainer.querySelectorAll('.skill-item');
+            let previewHTML = '';
+            
+            const skills = [];
+            skillItems.forEach(item => {
+                const skill = item.querySelector('.skill-name').value.trim();
+                if (skill) {
+                    skills.push(skill);
+                }
+            });
+            
+            if (skills.length > 0) {
+                previewHTML = skills.map(skill => 
+                    `<span class="bg-gray-100 px-3 py-1 rounded-full text-sm">${skill}</span>`
+                ).join('');
+            } else {
+                previewHTML = `
+                    <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">Skill 1</span>
+                    <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">Skill 2</span>
+                    <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">Skill 3</span>
+                `;
+            }
+            
+            previewSkillsContainer.innerHTML = previewHTML;
+        }
+        
+        // Project Fields
+        function addProjectField() {
+            const projectId = Date.now();
+            
+            const projectHTML = `
+                <div class="project-item bg-gray-50 p-4 rounded-lg mb-4" data-id="${projectId}">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-medium text-gray-700">Project</h3>
+                        <button class="remove-project text-red-500 hover:text-red-700" data-id="${projectId}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Project Name</label>
+                            <input type="text" class="project-name w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Date</label>
+                            <input type="text" class="project-date w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Technologies Used</label>
+                        <input type="text" class="project-tech w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. JavaScript, React, Node.js">
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Description (one per line)</label>
+                        <textarea class="project-description w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Describe your project and your contributions"></textarea>
+                    </div>
+                </div>
+            `;
+            
+            projectsContainer.insertAdjacentHTML('beforeend', projectHTML);
+            
+            // Add event listeners to the new inputs
+            const newProject = projectsContainer.querySelector(`[data-id="${projectId}"]`);
+            const inputs = newProject.querySelectorAll('input, textarea');
+            
+            inputs.forEach(input => {
+                input.addEventListener('input', updateProjectsPreview);
+            });
+            
+            // Add event listener to remove button
+            const removeBtn = newProject.querySelector('.remove-project');
+            removeBtn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                removeProjectField(id);
+            });
+            
+            updateProjectsPreview();
+        }
+        
+        function removeProjectField(id) {
+            const projectItem = projectsContainer.querySelector(`[data-id="${id}"]`);
+            if (projectItem) {
+                projectItem.remove();
+                updateProjectsPreview();
+            }
+        }
+        
+        function updateProjectsPreview() {
+            const projectItems = projectsContainer.querySelectorAll('.project-item');
+            let previewHTML = '';
+            
+            projectItems.forEach(item => {
+                const name = item.querySelector('.project-name').value.trim() || 'Project Name';
+                const date = item.querySelector('.project-date').value.trim() || 'Date';
+                const tech = item.querySelector('.project-tech').value.trim() || 'Tech 1, Tech 2';
+                const description = item.querySelector('.project-description').value.trim();
+                
+                const descriptionList = description.split('\n').filter(item => item.trim() !== '');
+                
+                previewHTML += `
+                    <div class="mb-4">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold">${name}</h3>
+                            <span class="text-gray-600">${date}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-1">
+                            <span>Technologies: ${tech}</span>
+                        </div>
+                        <ul class="list-disc pl-5 text-gray-700">
+                            ${descriptionList.map(desc => `<li>${desc}</li>`).join('')}
+                            ${descriptionList.length === 0 ? '<li>Project description or achievement</li>' : ''}
+                        </ul>
+                    </div>
+                `;
+            });
+            
+            if (projectItems.length === 0) {
+                previewHTML = `
+                    <div class="mb-4">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold">Project Name</h3>
+                            <span class="text-gray-600">Date</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-1">
+                            <span>Technologies: Tech 1, Tech 2</span>
+                        </div>
+                        <ul class="list-disc pl-5 text-gray-700">
+                            <li>Project description or achievement</li>
+                            <li>Another project detail</li>
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            previewProjectsContainer.innerHTML = previewHTML;
+        }
+        
+        // Certification Fields
+        function addCertificationField() {
+            const certificationId = Date.now();
+            
+            const certificationHTML = `
+                <div class="certification-item bg-gray-50 p-4 rounded-lg mb-4" data-id="${certificationId}">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-medium text-gray-700">Certification</h3>
+                        <button class="remove-certification text-red-500 hover:text-red-700" data-id="${certificationId}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Name</label>
+                            <input type="text" class="certification-name w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Issuing Organization</label>
+                            <input type="text" class="certification-org w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Date</label>
+                        <input type="text" class="certification-date w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            `;
+            
+            certificationsContainer.insertAdjacentHTML('beforeend', certificationHTML);
+            
+            // Add event listeners to the new inputs
+            const newCertification = certificationsContainer.querySelector(`[data-id="${certificationId}"]`);
+            const inputs = newCertification.querySelectorAll('input');
+            
+            inputs.forEach(input => {
+                input.addEventListener('input', updateCertificationsPreview);
+            });
+            
+            // Add event listener to remove button
+            const removeBtn = newCertification.querySelector('.remove-certification');
+            removeBtn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                removeCertificationField(id);
+            });
+            
+            updateCertificationsPreview();
+        }
+        
+        function removeCertificationField(id) {
+            const certificationItem = certificationsContainer.querySelector(`[data-id="${id}"]`);
+            if (certificationItem) {
+                certificationItem.remove();
+                updateCertificationsPreview();
+            }
+        }
+        
+        function updateCertificationsPreview() {
+            const certificationItems = certificationsContainer.querySelectorAll('.certification-item');
+            let previewHTML = '';
+            
+            certificationItems.forEach(item => {
+                const name = item.querySelector('.certification-name').value.trim() || 'Certification Name';
+                const org = item.querySelector('.certification-org').value.trim() || 'Issuing Organization';
+                const date = item.querySelector('.certification-date').value.trim() || 'Date';
+                
+                previewHTML += `
+                    <div class="mb-2">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold">${name}</h3>
+                            <span class="text-gray-600">${date}</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <span>${org}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (certificationItems.length === 0) {
+                previewHTML = `
+                    <div class="mb-2">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold">Certification Name</h3>
+                            <span class="text-gray-600">Date</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <span>Issuing Organization</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            previewCertificationsContainer.innerHTML = previewHTML;
+        }
+        
+        // Download PDF function
+        function downloadPDF() {
+            const resumeElement = document.getElementById('resumePreview');
+            
+            // Temporarily hide the download button
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.style.display = 'none';
+            
+            // Create PDF
+            html2canvas(resumeElement, {
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                allowTaint: true
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 295; // A4 height in mm
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+                
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                // Get the name for the PDF file
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                const fileName = firstName || lastName ? `${firstName}_${lastName}_Resume.pdf` : 'My_Resume.pdf';
+                
+                pdf.save(fileName);
+                
+                // Show the download button again
+                downloadBtn.style.display = 'inline-block';
+            });
+        }
+        
+        // Initialize with one empty field for each section
+        addExperienceField();
+        addEducationField();
+        addSkillField();
+        addProjectField();
+        addCertificationField();
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=harshh999/resume-builder" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
 </html>
